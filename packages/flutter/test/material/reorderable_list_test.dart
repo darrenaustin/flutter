@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
@@ -173,46 +174,44 @@ void main() {
           ),
         ));
 
-        Element getContentElement() {
-          final SingleChildScrollView listScrollView = tester.widget(find.byType(SingleChildScrollView));
-          final Widget scrollContents = listScrollView.child!;
-          final Element contentElement = tester.element(find.byElementPredicate((Element element) => element.widget == scrollContents));
-          return contentElement;
+        double getListHeight() {
+          final RenderSliverList listScrollView = tester.renderObject(find.byType(SliverList));
+          return listScrollView.geometry!.maxPaintExtent;
         }
 
-        const double kDraggingListHeight = 292.0;
+        const double kDraggingListHeight = 4 * itemHeight;
         // Drag a normal text item
-        expect(getContentElement().size!.height, kDraggingListHeight);
+        expect(getListHeight(), kDraggingListHeight);
         TestGesture drag = await tester.startGesture(tester.getCenter(find.text('Normal item')));
         await tester.pump(kLongPressTimeout + kPressTimeout);
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.height, kDraggingListHeight);
+        expect(getListHeight(), kDraggingListHeight);
 
         // Move it
         await drag.moveTo(tester.getCenter(find.text('Last item')));
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.height, kDraggingListHeight);
+        expect(getListHeight(), kDraggingListHeight);
 
         // Drop it
         await drag.up();
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.height, kDraggingListHeight);
+        expect(getListHeight(), kDraggingListHeight);
 
         // Drag a tall item
         drag = await tester.startGesture(tester.getCenter(find.text('Tall item')));
         await tester.pump(kLongPressTimeout + kPressTimeout);
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.height, kDraggingListHeight);
+        expect(getListHeight(), kDraggingListHeight);
         // Move it
         await drag.moveTo(tester.getCenter(find.text('Last item')));
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.height, kDraggingListHeight);
+        expect(getListHeight(), kDraggingListHeight);
 
         // Drop it
         await drag.up();
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.height, kDraggingListHeight);
-      }, skip: true); // TODO(darrenaustin): depended on the SingleChildScrollView in the implementation
+        expect(getListHeight(), kDraggingListHeight);
+      });
 
       testWidgets('Vertical drop area golden', (WidgetTester tester) async {
         final Widget reorderableListView = ReorderableListView(
@@ -253,7 +252,7 @@ void main() {
           find.byKey(const Key('blue')),
           matchesGoldenFile('reorderable_list_test.vertical.drop_area.png'),
         );
-      }, skip: true); // TODO(darrenaustin): need to update the golden
+      });
 
       testWidgets('Preserves children states when the list parent changes the order', (WidgetTester tester) async {
         _StatefulState findState(Key key) {
@@ -349,8 +348,8 @@ void main() {
         }
 
         await tester.pumpWidget(buildWithScrollController(primary));
-        SingleChildScrollView scrollView = tester.widget(
-          find.byType(SingleChildScrollView),
+        Scrollable scrollView = tester.widget(
+          find.byType(Scrollable),
         );
         expect(scrollView.controller, primary);
 
@@ -358,10 +357,10 @@ void main() {
         final ScrollController primary2 = ScrollController();
         await tester.pumpWidget(buildWithScrollController(primary2));
         scrollView = tester.widget(
-          find.byType(SingleChildScrollView),
+          find.byType(Scrollable),
         );
         expect(scrollView.controller, primary2);
-      }, skip: true); // TODO(darrenaustin): depended on the SingleChildScrollView in the implementation
+      });
 
       testWidgets('Test custom ScrollController behavior when set', (WidgetTester tester) async {
         const Key firstBox = Key('C');
@@ -372,7 +371,7 @@ void main() {
           MaterialApp(
             home: Scaffold(
               body: SizedBox(
-                height: 200,
+                height: 150,
                 child: ReorderableListView(
                   scrollController: customController,
                   onReorder: (int oldIndex, int newIndex) { },
@@ -419,8 +418,11 @@ void main() {
         // First 20.0 px always ignored, so scroll offset is only
         // shifted by 80.0.
         // Final offset: 40.0 + 80.0 = 120.0
+        // The total distance available to scroll is 300.0 - 150.0 = 150.0, or
+        // height of the ReorderableListView minus height of the SizedBox. Since
+        // The final offset is less than this, it's not limited.
         expect(customController.offset, 120.0);
-      }, skip: true); // TODO(darrenaustin): not sure why this doesn't work with the new implementation
+      });
 
       testWidgets('Still builds when no PrimaryScrollController is available', (WidgetTester tester) async {
         final Widget reorderableList = ReorderableListView(
@@ -451,12 +453,7 @@ void main() {
         } catch (e) {
           fail('Expected no error, but got $e');
         }
-        // Expect that we have build *a* ScrollController for use in the view.
-        final SingleChildScrollView scrollView = tester.widget(
-          find.byType(SingleChildScrollView),
-        );
-        expect(scrollView.controller, isNotNull);
-      }, skip: true); // TODO(darrenaustin): we now need an overlay, perhaps the SliverReorderableList should provide one?
+      });
 
       group('Accessibility (a11y/Semantics)', () {
         Map<CustomSemanticsAction, VoidCallback> getSemanticsActions(int index) {
@@ -760,46 +757,44 @@ void main() {
           ),
         ));
 
-        Element getContentElement() {
-          final SingleChildScrollView listScrollView = tester.widget(find.byType(SingleChildScrollView));
-          final Widget scrollContents = listScrollView.child!;
-          final Element contentElement = tester.element(find.byElementPredicate((Element element) => element.widget == scrollContents));
-          return contentElement;
+        double getListWidth() {
+          final RenderSliverList listScrollView = tester.renderObject(find.byType(SliverList));
+          return listScrollView.geometry!.maxPaintExtent;
         }
 
-        const double kDraggingListWidth = 292.0;
+        const double kDraggingListWidth = 4 * itemHeight;
         // Drag a normal text item
-        expect(getContentElement().size!.width, kDraggingListWidth);
+        expect(getListWidth(), kDraggingListWidth);
         TestGesture drag = await tester.startGesture(tester.getCenter(find.text('Normal item')));
         await tester.pump(kLongPressTimeout + kPressTimeout);
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.width, kDraggingListWidth);
+        expect(getListWidth(), kDraggingListWidth);
 
         // Move it
         await drag.moveTo(tester.getCenter(find.text('Last item')));
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.width, kDraggingListWidth);
+        expect(getListWidth(), kDraggingListWidth);
 
         // Drop it
         await drag.up();
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.width, kDraggingListWidth);
+        expect(getListWidth(), kDraggingListWidth);
 
         // Drag a tall item
         drag = await tester.startGesture(tester.getCenter(find.text('Tall item')));
         await tester.pump(kLongPressTimeout + kPressTimeout);
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.width, kDraggingListWidth);
+        expect(getListWidth(), kDraggingListWidth);
         // Move it
         await drag.moveTo(tester.getCenter(find.text('Last item')));
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.width, kDraggingListWidth);
+        expect(getListWidth(), kDraggingListWidth);
 
         // Drop it
         await drag.up();
         await tester.pumpAndSettle();
-        expect(getContentElement().size!.width, kDraggingListWidth);
-      }, skip: true); // TODO(darrenaustin): depended on the SingleChildScrollView in the implementation
+        expect(getListWidth(), kDraggingListWidth);
+      });
 
       testWidgets('Horizontal drop area golden', (WidgetTester tester) async {
         final Widget reorderableListView = ReorderableListView(
@@ -840,7 +835,7 @@ void main() {
           find.byKey(const Key('blue')),
           matchesGoldenFile('reorderable_list_test.horizontal.drop_area.png'),
         );
-      }, skip: true); // TODO(darrenaustin): need to update the golden
+      });
 
       testWidgets('Preserves children states when the list parent changes the order', (WidgetTester tester) async {
         _StatefulState findState(Key key) {
