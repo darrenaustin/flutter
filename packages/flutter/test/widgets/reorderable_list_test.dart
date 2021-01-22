@@ -8,6 +8,85 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 void main() {
+  testWidgets('negative itemCount should assert', (WidgetTester tester) async {
+    final List<int> items = <int>[1, 2, 3];
+    await tester.pumpWidget(MaterialApp(
+      home: StatefulBuilder(
+        builder: (BuildContext outerContext, StateSetter setState) {
+          return CustomScrollView(
+            slivers: <Widget>[
+              SliverReorderableList(
+                itemCount: -1,
+                onReorder: (int fromIndex, int toIndex) {
+                  setState(() {
+                    if (toIndex > fromIndex) {
+                      toIndex -= 1;
+                    }
+                    items.insert(toIndex, items.removeAt(fromIndex));
+                  });
+                },
+                itemBuilder: (BuildContext context, int index) {
+                  return Container(
+                    height: 100,
+                    child: Text('item ${items[index]}'),
+                  );
+                },
+              ),
+            ],
+          );
+        }
+      ),
+    ));
+    expect(tester.takeException(), isA<AssertionError>());
+  });
+
+  testWidgets('zero itemCount should not build widget', (WidgetTester tester) async {
+    final List<int> items = <int>[1, 2, 3];
+    await tester.pumpWidget(MaterialApp(
+      home: StatefulBuilder(
+        builder: (BuildContext outerContext, StateSetter setState) {
+          return CustomScrollView(
+            slivers: <Widget>[
+              SliverFixedExtentList(
+                itemExtent: 50.0,
+                delegate: SliverChildListDelegate(<Widget>[
+                  const Text('before'),
+                ]),
+              ),
+              SliverReorderableList(
+                itemCount: 0,
+                onReorder: (int fromIndex, int toIndex) {
+                  setState(() {
+                    if (toIndex > fromIndex) {
+                      toIndex -= 1;
+                    }
+                    items.insert(toIndex, items.removeAt(fromIndex));
+                  });
+                },
+                itemBuilder: (BuildContext context, int index) {
+                  return Container(
+                    height: 100,
+                    child: Text('item ${items[index]}'),
+                  );
+                },
+              ),
+              SliverFixedExtentList(
+                itemExtent: 50.0,
+                delegate: SliverChildListDelegate(<Widget>[
+                  const Text('after'),
+                ]),
+              ),
+            ],
+          );
+        }
+      ),
+    ));
+
+    expect(find.text('before'), findsOneWidget);
+    expect(find.byType(SliverReorderableList), findsNothing);
+    expect(find.text('after'), findsOneWidget);
+  });
+
   testWidgets('ReorderableList, drag and drop, fixed height items', (WidgetTester tester) async {
     final List<int> items = List<int>.generate(8, (int index) => index);
 
