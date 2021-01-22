@@ -136,6 +136,9 @@ class ReorderableList extends StatefulWidget {
 
   /// A callback that allows the app to add an animated decoration around
   /// an item when it is being dragged.
+  ///
+  /// By default, the animation duration is 250 milliseconds forwards
+  /// and in reverse.
   final ReorderItemProxyDecorator? proxyDecorator;
 
   /// The axis along which the scroll view scrolls.
