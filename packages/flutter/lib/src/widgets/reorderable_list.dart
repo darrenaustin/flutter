@@ -870,6 +870,8 @@ class _ReorderableItemState extends State<_ReorderableItem> {
         if (_offsetAnimation == null) {
           _offsetAnimation = AnimationController(
             vsync: _listState,
+            // TODO(shihaohong): Handle a custom animation controller, particularly
+            // to handle custom durations.
             duration: const Duration(milliseconds: 250),
           )
             ..addListener(_update)
