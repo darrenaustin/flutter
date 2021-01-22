@@ -387,6 +387,11 @@ class SliverReorderableList extends StatefulWidget {
   final IndexedWidgetBuilder itemBuilder;
 
   /// The number of items in the list.
+  ///
+  /// It must be a non-negative integer. When zero, nothing is displayed and
+  /// the widget occupies no space.
+  ///
+  /// This defaults to zero.
   final int itemCount;
 
   /// A callback used by the list to report that a list item has been dragged
