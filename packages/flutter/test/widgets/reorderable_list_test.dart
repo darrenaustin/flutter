@@ -126,6 +126,69 @@ void main() {
     expect(getIconStyle().color, iconColor);
     expect(getTextStyle().color, textColor);
   });
+
+  testWidgets('SliverReorderableList - custom proxyDecorator', (WidgetTester tester) async {
+    const ValueKey<String> fadeTransitionKey = ValueKey<String>('reordered-fade');
+
+    await tester.pumpWidget(
+      TestList(
+        items: List<int>.from(<int>[0, 1, 2, 3]),
+        proxyDecorator: (
+          Widget child,
+          int index,
+          Animation<double> animation,
+        ) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (BuildContext context, Widget? child) {
+              final Tween<double> fadeValues = Tween<double>(begin: 1.0, end: 0.5);
+              final Animation<double> fadeAnimation = animation.drive(fadeValues);
+              return FadeTransition(
+                key: fadeTransitionKey,
+                opacity: fadeAnimation,
+                child: child,
+              );
+            },
+            child: child,
+          );
+        },
+      ),
+    );
+
+    Finder getItemFadeTransition() => find.byKey(fadeTransitionKey);
+
+    expect(getItemFadeTransition(), findsNothing);
+
+    // Start gesture on first item
+    final TestGesture drag = await tester.startGesture(tester.getCenter(find.text('item 0')));
+    await tester.pump(kPressTimeout);
+
+    // Drag enough for transition animation defined in proxyDecorator to start.
+    await drag.moveBy(const Offset(0, 50));
+    await tester.pump();
+
+    // At the start, opacity should be at 1.0.
+    expect(getItemFadeTransition(), findsOneWidget);
+    FadeTransition fadeTransition = tester.widget(getItemFadeTransition());
+    expect(fadeTransition.opacity.value, 1.0);
+
+    // Let animation run halfway.
+    await tester.pump(const Duration(milliseconds: 125));
+    fadeTransition = tester.widget(getItemFadeTransition());
+    expect(fadeTransition.opacity.value, greaterThan(0.5));
+    expect(fadeTransition.opacity.value, lessThan(1.0));
+
+    // Allow animation to run to the end.
+    await tester.pumpAndSettle();
+    expect(find.byKey(fadeTransitionKey), findsOneWidget);
+    fadeTransition = tester.widget(getItemFadeTransition());
+    expect(fadeTransition.opacity.value, 0.5);
+
+    // Finish reordering.
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(getItemFadeTransition(), findsNothing);
+  });
 }
 
 class TestList extends StatefulWidget {
@@ -133,12 +196,14 @@ class TestList extends StatefulWidget {
     Key? key,
     this.textColor,
     this.iconColor,
+    this.proxyDecorator,
     required this.items,
   }) : super(key: key);
 
   final List<int> items;
   final Color? textColor;
   final Color? iconColor;
+  final ReorderItemProxyDecorator? proxyDecorator;
 
   @override
   _TestListState createState() => _TestListState();
@@ -159,6 +224,7 @@ class _TestListState extends State<TestList> {
                   return CustomScrollView(
                     slivers: <Widget>[
                       SliverReorderableList(
+                        proxyDecorator: widget.proxyDecorator,
                         itemBuilder: (BuildContext context, int index) {
                           return Container(
                             key: ValueKey<int>(items[index]),

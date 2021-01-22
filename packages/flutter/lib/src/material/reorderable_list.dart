@@ -381,7 +381,7 @@ class _ReorderableListContentState extends State<_ReorderableListContent> {
       builder: (BuildContext context, Widget? child) {
         final double animValue = Curves.easeInOut.transform(animation.value);
         final double elevation = lerpDouble(0, 6, animValue)!;
-          return Material(
+        return Material(
           child: child,
           elevation: elevation,
         );
